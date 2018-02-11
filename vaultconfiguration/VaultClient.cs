@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace VaultConfiguration
 {
@@ -20,6 +21,21 @@ namespace VaultConfiguration
         }
 
         private static string CoercePath(string path) => $"v1/{path.TrimStart('/')}";
+
+        public async Task<JObject> GetList(string path)
+        {
+            var coercedPath = CoercePath(path);
+            var request = new HttpRequestMessage(HttpMethod.Get, coercedPath);
+            var token = _tokenProvider.GetToken();
+
+            var response = await SendAsync(request, token).ConfigureAwait(false);
+
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            var result = JsonConvert.DeserializeObject<JObject>(json);
+
+            return result;
+        }
 
         public async Task<VaultResponse> ReadSecretAsync(string path)
         {

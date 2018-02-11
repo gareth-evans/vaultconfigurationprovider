@@ -49,6 +49,8 @@ namespace VaultConfiguration
 
         public void Load()
         {
+            //get list of keys
+            var keys = _vaultClient.GetList("secret?list=true").Result;
         }
 
         public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath)
