@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
@@ -16,7 +15,7 @@ namespace VaultConfiguration
         private readonly VaultClient _vaultClient;
         private Regex _regex;
 
-        private IDictionary<string,string> _secrets = new Dictionary<string, string>();
+        private readonly IDictionary<string,string> _secrets = new Dictionary<string, string>();
 
         public VaultConfigurationProvider(
             Uri baseAddress, 
@@ -30,14 +29,6 @@ namespace VaultConfiguration
 
         public bool TryGet(string key, out string value)
         {
-            //var path = ResolvePathAndKey(key);
-
-            //var result = _vaultClient.ReadSecretAsync(path.path).Result;
-
-            //var jvalue = result.Data[path.key] as JValue;
-
-            //value = jvalue.Value as string;
-
             return this._secrets.TryGetValue(key, out value);
         }
 
@@ -53,7 +44,6 @@ namespace VaultConfiguration
 
         public void Load()
         {
-            // get list of keys
             var keys = _vaultClient.GetList("secret?list=true").Result["data"]["keys"].Select(t => t.Value<string>()).ToList();
 
             foreach (var key in keys)
@@ -75,16 +65,6 @@ namespace VaultConfiguration
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             return this;
-        }
-
-        private (string path, string key) ResolvePathAndKey(string path)
-        {
-            var match = _regex.Match(path);
-            var extractedPath = match.Groups[1].Value;
-
-            var x = $"/{_rootPath.Trim('/')}/{extractedPath.Replace(':', '/')}";
-
-            return (x, match.Groups[2].Value);
         }
 
         private class NullChangeToken : IChangeToken
