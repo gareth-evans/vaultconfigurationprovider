@@ -8,11 +8,15 @@ using Newtonsoft.Json.Linq;
 
 namespace VaultConfiguration
 {
+    using System.Linq;
+
     public class VaultConfigurationProvider : IConfigurationProvider, IConfigurationSource
     {
         private readonly string _rootPath;
         private readonly VaultClient _vaultClient;
         private Regex _regex;
+
+        private IDictionary<string,string> _secrets = new Dictionary<string, string>();
 
         public VaultConfigurationProvider(
             Uri baseAddress, 
@@ -26,15 +30,15 @@ namespace VaultConfiguration
 
         public bool TryGet(string key, out string value)
         {
-            var path = ResolvePathAndKey(key);
+            //var path = ResolvePathAndKey(key);
 
-            var result = _vaultClient.ReadSecretAsync(path.path).Result;
+            //var result = _vaultClient.ReadSecretAsync(path.path).Result;
 
-            var jvalue = result.Data[path.key] as JValue;
+            //var jvalue = result.Data[path.key] as JValue;
 
-            value = jvalue.Value as string;
+            //value = jvalue.Value as string;
 
-            return true;
+            return this._secrets.TryGetValue(key, out value);
         }
 
         public void Set(string key, string value)
@@ -49,6 +53,18 @@ namespace VaultConfiguration
 
         public void Load()
         {
+            // get list of keys
+            var keys = _vaultClient.GetList("secret?list=true").Result["data"]["keys"].Select(t => t.Value<string>()).ToList();
+
+            foreach (var key in keys)
+            {
+                var secret = _vaultClient.ReadSecretAsync($"secret/{key}").Result;
+
+                foreach (var property in secret.Data)
+                {
+                    this._secrets.Add($"vault:secret:{key}:{property.Key}", property.Value.Value<string>());
+                }
+            }
         }
 
         public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath)

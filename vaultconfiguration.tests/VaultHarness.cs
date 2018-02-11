@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
@@ -15,7 +17,7 @@ namespace vaultconfiguration.tests
         {
             if (_vaultProcess != null) throw new InvalidOperationException("Vault is already started");
 
-            var port = 8200;
+            var port = GetFreeTcpPort();
             var hostname = "127.0.0.1";
 
             VaultAddress = new Uri($"http://{hostname}:{port}");
@@ -23,7 +25,7 @@ namespace vaultconfiguration.tests
             RootTokenId = Guid.NewGuid().ToString();
 
             var startInfo =
-                new ProcessStartInfo("vault.exe")
+                new ProcessStartInfo("c:\\tools\\vault\\vault.exe")
                 {
                     Arguments = $"server -dev -dev-root-token-id={RootTokenId} -dev-listen-address={hostname}:{port}",
                     CreateNoWindow = true,
@@ -93,6 +95,15 @@ namespace vaultconfiguration.tests
             var currentProcess = Process.GetCurrentProcess();
 
             Process.Start("powershell", $"wait-process -id {currentProcess.Id}; get-process -id {_vaultProcess.Id} | stop-process");
+        }
+
+        private static int GetFreeTcpPort()
+        {
+            TcpListener l = new TcpListener(IPAddress.Loopback, 0);
+            l.Start();
+            int port = ((IPEndPoint)l.LocalEndpoint).Port;
+            l.Stop();
+            return port;
         }
     }
 }
