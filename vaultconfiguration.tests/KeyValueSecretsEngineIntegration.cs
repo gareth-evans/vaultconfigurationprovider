@@ -31,5 +31,23 @@ namespace vaultconfiguration.tests
 
             Assert.Equal("crux", result);
         }
+
+        [Fact]
+        public async Task Should_read_secret_from_two_levels_deep()
+        {
+            var client = new VaultClient(_vaultHarness.VaultAddress, new TokenAuthenticationProvider(_vaultHarness.RootTokenId));
+
+            const string secret = "{ \"bar\": \"crux\" }";
+
+            await client.WriteSecretAsync("secret/parent/child", secret);
+
+            var configuration = new ConfigurationBuilder()
+                .Add(new VaultConfigurationProvider(_vaultHarness.VaultAddress, _vaultHarness.RootTokenId, "secret"))
+                .Build();
+
+            var result = configuration["vault:secret:parent:child:bar"];
+
+            Assert.Equal("crux", result);
+        }
     }
 }

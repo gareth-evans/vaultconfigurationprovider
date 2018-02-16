@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
@@ -13,7 +14,6 @@ namespace VaultConfiguration
     {
         private readonly string _rootPath;
         private readonly VaultClient _vaultClient;
-        private Regex _regex;
 
         private readonly IDictionary<string,string> _secrets = new Dictionary<string, string>();
 
@@ -24,7 +24,6 @@ namespace VaultConfiguration
         {
             _rootPath = rootPath;
             _vaultClient = new VaultClient(baseAddress, new TokenAuthenticationProvider(token));
-            _regex = new Regex($"^vault:{rootPath}:(?<path>.*):(?<key>.*)$");
         }
 
         public bool TryGet(string key, out string value)
@@ -44,15 +43,26 @@ namespace VaultConfiguration
 
         public void Load()
         {
-            var keys = _vaultClient.GetList("secret?list=true").Result["data"]["keys"].Select(t => t.Value<string>()).ToList();
+            ReadChildSecrets(_rootPath).Wait();
+        }
+
+        private async Task ReadChildSecrets(string parent)
+        {
+            var keys = _vaultClient.GetList($"{parent}?list=true").Result["data"]["keys"].Select(t => t.Value<string>()).ToList();
 
             foreach (var key in keys)
             {
-                var secret = _vaultClient.ReadSecretAsync($"secret/{key}").Result;
+                if (key.EndsWith("/"))
+                {
+                    await ReadChildSecrets($"{parent}/{key}");
+                    continue;
+                }
+
+                var secret = _vaultClient.ReadSecretAsync(PathBuilder.Combine(parent, key)).Result;
 
                 foreach (var property in secret.Data)
                 {
-                    this._secrets.Add($"vault:secret:{key}:{property.Key}", property.Value.Value<string>());
+                    this._secrets.Add(PathBuilder.CreateConfigurationKey("vault", parent, key, property.Key), property.Value.Value<string>());
                 }
             }
         }
