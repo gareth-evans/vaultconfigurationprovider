@@ -71,5 +71,25 @@ namespace vaultconfiguration.tests
             Assert.Equal("value1", rootValue);
             Assert.Equal("value2", nestedValue);
         }
+
+        [Fact]
+        public async Task Should_overwrite_values_when_path_already_exists()
+        {
+            const string secretOnRoot = "{ \"property1\": \"value1\" }";
+            const string nestedSecret = "{ \"property2\": \"value2\" }";
+
+            var client = new VaultClient(_vaultHarness.VaultAddress, new TokenAuthenticationProvider(_vaultHarness.RootTokenId));
+
+            await client.WriteSecretAsync("secret/parent", secretOnRoot);
+            await client.WriteSecretAsync("secret/parent/property1", nestedSecret);
+
+            var configuration = new ConfigurationBuilder()
+                .Add(new VaultConfigurationProvider(_vaultHarness.VaultAddress, _vaultHarness.RootTokenId, "secret"))
+                .Build();
+
+            var result = configuration["vault:secret:parent:property1"];
+
+            Assert.Equal(nestedSecret, result);
+        }
     }
 }
