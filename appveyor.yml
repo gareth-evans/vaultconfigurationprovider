@@ -7,3 +7,5 @@ dotnet_csproj:
   assembly_version: '{version}'
   file_version: '{version}'
   informational_version: '{version}'
+test_script:
+  -cmd: xunit.console 'vaultconfiguration.tests\bin\Debug\netcoreapp2.0\vaultconfiguration.tests.dll' /appveyor
