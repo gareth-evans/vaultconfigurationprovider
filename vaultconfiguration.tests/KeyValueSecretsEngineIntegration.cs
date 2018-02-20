@@ -49,5 +49,27 @@ namespace vaultconfiguration.tests
 
             Assert.Equal("crux", result);
         }
+
+        [Fact]
+        public async Task Should_read_simple_and_nested_secret_on_the_same_path()
+        {
+            const string secretOnRoot = "{ \"property1\": \"value1\" }";
+            const string nestedSecret = "{ \"property2\": \"value2\" }";
+
+            var client = new VaultClient(_vaultHarness.VaultAddress, new TokenAuthenticationProvider(_vaultHarness.RootTokenId));
+
+            await client.WriteSecretAsync("secret/parent", secretOnRoot);
+            await client.WriteSecretAsync("secret/parent/child", nestedSecret);
+
+            var configuration = new ConfigurationBuilder()
+                .Add(new VaultConfigurationProvider(_vaultHarness.VaultAddress, _vaultHarness.RootTokenId, "secret"))
+                .Build();
+
+            var rootValue = configuration["vault:secret:parent:property1"];
+            var nestedValue = configuration["vault:secret:parent:child:property2"];
+
+            Assert.Equal("value1", rootValue);
+            Assert.Equal("value2", nestedValue);
+        }
     }
 }
