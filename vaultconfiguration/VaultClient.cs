@@ -76,5 +76,12 @@ namespace VaultConfiguration
 
             await SendAsync(request, token);
         }
+
+        public async Task WriteSecretAsync<T>(string path, T value)
+        {
+            var json = JsonConvert.SerializeObject(value);
+
+            await WriteSecretAsync(path, json);
+        }
     }
 }

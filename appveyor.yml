@@ -1,4 +1,4 @@
-version: 0.1.2
+version: 0.1.3
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
@@ -8,7 +8,6 @@ dotnet_csproj:
   file_version: '{version}'
   informational_version: '{version}'
 build_script:
-  - ps: >-
-      dotnet --version
+  - ps: dotnet build
 test_script:
-  -cmd: xunit.console 'vaultconfiguration.tests\bin\Debug\netcoreapp2.0\vaultconfiguration.tests.dll' /appveyor
+  - ps: dotnet test

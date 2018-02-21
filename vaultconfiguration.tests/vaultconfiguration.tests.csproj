@@ -12,6 +12,7 @@
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
     <PackageReference Include="xunit" Version="2.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+    <PackageReference Include="Bogus" Version="22.0.2" />
   </ItemGroup>
 
   <ItemGroup>
